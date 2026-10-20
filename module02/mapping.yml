@@ -17,7 +17,7 @@ ldap:
 
 politique:
   retirer_absents: true             # retire les membres LDAP directs absents du groupe LDAP
-  conserver_niveau_superieur: false  # ne rétrograde pas un membre ayant un niveau plus élevé
+  conserver_niveau_superieur: true  # ne rétrograde pas un membre ayant un niveau plus élevé
   proteger: [root]                  # comptes jamais modifiés
 
 mappings:
