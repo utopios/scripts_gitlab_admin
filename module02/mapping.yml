@@ -1,0 +1,36 @@
+# Module 02 - Correspondance groupes LDAP -> groupes GitLab (TP02)
+# Utilisé par sync_ldap_groupes.py. Aucun secret ici : le jeton GitLab est lu dans
+# $GITLAB_TOKEN ou token_file, le mot de passe de bind LDAP dans $LDAP_BIND_PASSWORD.
+
+gitlab:
+  url: http://gitlab.formation.lan
+  token_file: ~/.gitlab-token
+
+ldap:
+  url: ldap://127.0.0.1:389
+  bind_dn: cn=gitlab-bind,ou=services,dc=formation,dc=lan
+  password_env: LDAP_BIND_PASSWORD
+  base_users: ou=people,dc=formation,dc=lan
+  base_groups: ou=groups,dc=formation,dc=lan
+  groupe_acces: gitlab-users        # même règle que user_filter dans gitlab.rb
+  provider: ldapmain
+
+politique:
+  retirer_absents: true             # retire les membres LDAP directs absents du groupe LDAP
+  conserver_niveau_superieur: true  # ne rétrograde pas un membre ayant un niveau plus élevé
+  proteger: [root]                  # comptes jamais modifiés
+
+mappings:
+  - ldap_group: dev-backend
+    gitlab_group: plateforme/backend
+    access_level: developer
+  - ldap_group: dev-frontend
+    gitlab_group: plateforme/frontend
+    access_level: developer
+  - ldap_group: ops
+    gitlab_group: ops
+    access_level: maintainer
+  - ldap_group: stagiaires
+    gitlab_group: sandbox
+    access_level: developer
+    expires_in_days: 3              # appartenance limitée à la durée de la formation
