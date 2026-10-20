@@ -1,0 +1,12 @@
+# Variante de provision.yml utilisant les comptes de test m02-* (démo)
+# Module 02 - Exemple de description déclarative pour provisionner.py
+groupes:
+  - chemin: m02-demo
+    visibilite: private
+    membres:
+      m02-jean.dupont: developer
+  - chemin: m02-demo/equipe-a
+    projets: [api, front]
+    membres:
+      m02-lea.moreau: maintainer
+      m02-jean.dupont: {niveau: reporter, expire: 2026-12-31}
