@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Interrogation de Prometheus via l'API HTTP /api/v1/query
 # =============================================================================
 # Module 06 - Interroger Prometheus en ligne de commande (API HTTP /api/v1/query)
 #
