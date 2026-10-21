@@ -1,0 +1,42 @@
+# Module 06 - Règles d'alerte Prometheus complémentaires (format Prometheus 2.x/3.x)
+# Emplacement : /var/opt/gitlab/prometheus/rules/  (glob prometheus['rules_files'])
+# Rechargement : sudo gitlab-ctl hup prometheus
+groups:
+- name: m06-exploitation
+  rules:
+  - alert: M06GitLabComposantDown
+    expr: up{job=~"gitlab-rails|gitlab-workhorse|gitaly|gitlab-sidekiq|postgres|redis|nginx"} == 0
+    for: 1m
+    labels: {severity: critical}
+    annotations:
+      summary: "{{ $labels.job }} ne répond plus au scrape Prometheus"
+
+  - alert: M06SidekiqLatenceFile
+    expr: max by (name) (sidekiq_queue_latency_seconds) > 60
+    for: 5m
+    labels: {severity: warning}
+    annotations:
+      summary: "File {{ $labels.name }} : plus vieux job en attente depuis {{ $value | humanizeDuration }}"
+
+  - alert: M06DisqueOccupe80
+    expr: 100 * (1 - node_filesystem_avail_bytes{fstype=~"ext4|xfs"}
+                    / node_filesystem_size_bytes{fstype=~"ext4|xfs"}) > 80
+    for: 10m
+    labels: {severity: warning}
+    annotations:
+      summary: "{{ $labels.mountpoint }} occupé à {{ $value | printf \"%.0f\" }} %"
+
+  - alert: M06DisquePleinSous7Jours
+    expr: predict_linear(node_filesystem_avail_bytes{fstype=~"ext4|xfs"}[6h], 7 * 86400) < 0
+    for: 1h
+    labels: {severity: warning}
+    annotations:
+      summary: "{{ $labels.mountpoint }} sera plein dans moins de 7 jours au rythme actuel"
+
+  # Alerte de démonstration : rafale de 404 (déclenchable sans risque en TP)
+  - alert: M06Rafale404
+    expr: sum(rate(gitlab_workhorse_http_requests_total{code="404"}[1m])) > 2
+    for: 30s
+    labels: {severity: info}
+    annotations:
+      summary: "Rafale de 404 : {{ $value | printf \"%.1f\" }} req/s"
