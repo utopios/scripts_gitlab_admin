@@ -1,0 +1,28 @@
+// Pipeline Jenkins du projet m09-ci/app-jenkins (module 09)
+// Les étapes gitlabBuilds / gitlabCommitStatus (plugin gitlab-plugin) publient des statuts de commit
+// dans GitLab : "pending" au démarrage, puis "running", "success" ou "failed".
+pipeline {
+  agent any
+  options {
+    gitLabConnection('gitlab')                                  // connexion déclarée dans casc.yaml
+    gitlabBuilds(builds: ['jenkins-build', 'jenkins-test'])     // statuts "pending" dès le démarrage
+    timeout(time: 10, unit: 'MINUTES')
+  }
+  stages {
+    stage('build') {
+      steps {
+        gitlabCommitStatus(name: 'jenkins-build') {
+          sh 'echo "Branche: ${gitlabSourceBranch:-manuel}  Commit: $(git rev-parse --short HEAD)"'
+          sh './build.sh'
+        }
+      }
+    }
+    stage('test') {
+      steps {
+        gitlabCommitStatus(name: 'jenkins-test') {
+          sh './test.sh'
+        }
+      }
+    }
+  }
+}

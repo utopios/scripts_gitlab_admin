@@ -1,0 +1,68 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<!-- Modèle de job Pipeline Jenkins (rempli par jenkins-jobs.sh) : Jenkinsfile lu dans le dépôt GitLab -->
+<flow-definition plugin="workflow-job">
+  <description>@DESCRIPTION@</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <!-- Connexion GitLab utilisée pour publier les statuts de commit -->
+    <com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty plugin="gitlab-plugin">
+      <gitLabConnection>gitlab</gitLabConnection>
+      <jobCredentialId></jobCredentialId>
+      <useAlternativeCredential>false</useAlternativeCredential>
+    </com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty>
+    <!-- PAS de paramètre "gitlabSourceBranch" : testé en 19.4.2 / gitlab-plugin 1.2155, un paramètre de ce nom
+         (valeur par défaut main) PREND LE PAS sur la variable fournie par le plugin : toutes les MR
+         construisaient main. Conséquence : ce job ne se lance que depuis GitLab (pas de "Build Now"). -->
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <com.dabsquared.gitlabjenkins.GitLabPushTrigger plugin="gitlab-plugin">
+          <spec></spec>
+          <triggerOnPush>true</triggerOnPush>
+          <triggerToBranchDeleteRequest>false</triggerToBranchDeleteRequest>
+          <triggerOnMergeRequest>true</triggerOnMergeRequest>
+          <triggerOnlyIfNewCommitsPushed>false</triggerOnlyIfNewCommitsPushed>
+          <triggerOnPipelineEvent>false</triggerOnPipelineEvent>
+          <triggerOnAcceptedMergeRequest>false</triggerOnAcceptedMergeRequest>
+          <triggerOnClosedMergeRequest>false</triggerOnClosedMergeRequest>
+          <triggerOnApprovedMergeRequest>false</triggerOnApprovedMergeRequest>
+          <triggerOpenMergeRequestOnPush>never</triggerOpenMergeRequestOnPush>
+          <triggerOnNoteRequest>true</triggerOnNoteRequest>
+          <noteRegex>Jenkins please retry a build</noteRegex>
+          <ciSkip>true</ciSkip>
+          <skipWorkInProgressMergeRequest>true</skipWorkInProgressMergeRequest>
+          <setBuildDescription>true</setBuildDescription>
+          <branchFilterType>All</branchFilterType>
+          <includeBranchesSpec></includeBranchesSpec>
+          <excludeBranchesSpec></excludeBranchesSpec>
+          <sourceBranchRegex></sourceBranchRegex>
+          <targetBranchRegex></targetBranchRegex>
+          <secretToken>@SECRET_TOKEN@</secretToken>
+          <pendingBuildName></pendingBuildName>
+          <cancelPendingBuildsOnUpdate>false</cancelPendingBuildsOnUpdate>
+        </com.dabsquared.gitlabjenkins.GitLabPushTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps">
+    <scm class="hudson.plugins.git.GitSCM" plugin="git">
+      <configVersion>2</configVersion>
+      <userRemoteConfigs>
+        <hudson.plugins.git.UserRemoteConfig>
+          <name>origin</name>
+          <refspec>+refs/heads/*:refs/remotes/origin/* +refs/merge-requests/*/head:refs/remotes/origin/merge-requests/*</refspec>
+          <url>@REPO_URL@</url>
+          <credentialsId>gitlab-clone</credentialsId>
+        </hudson.plugins.git.UserRemoteConfig>
+      </userRemoteConfigs>
+      <branches>
+        <hudson.plugins.git.BranchSpec><name>origin/${gitlabSourceBranch}</name></hudson.plugins.git.BranchSpec>
+      </branches>
+      <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+      <submoduleCfg class="empty-list"/>
+      <extensions/>
+    </scm>
+    <scriptPath>Jenkinsfile</scriptPath>
+    <lightweight>false</lightweight>
+  </definition>
+  <disabled>false</disabled>
+</flow-definition>

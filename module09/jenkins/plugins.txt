@@ -1,0 +1,8 @@
+# Plugins Jenkins installés dans l'image (dépendances résolues par jenkins-plugin-cli)
+# Pour figer les versions (recommandé en production) : nom:version, ex. gitlab-plugin:1.9.x
+gitlab-plugin
+git
+workflow-aggregator
+configuration-as-code
+credentials
+plain-credentials

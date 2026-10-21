@@ -1,0 +1,54 @@
+# Configuration as Code (plugin configuration-as-code) de Jenkins - module 09
+# Les valeurs ${...} sans ":" sont lues dans /run/secrets/<nom> (fichiers montés en lecture seule)
+# ou dans les variables d'environnement du conteneur (JENKINS_URL).
+jenkins:
+  systemMessage: "Jenkins formation GitLab Expert (module 09) - configuré par JCasC, ne pas modifier à la main"
+  numExecutors: 2            # labo uniquement : en production 0 sur le contrôleur + agents
+  mode: NORMAL
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: admin
+          name: "Administrateur Jenkins"
+          password: "${jenkins-admin-password}"
+        - id: gitlab
+          name: "Compte technique GitLab (intégration Jenkins)"
+          password: "${jenkins-gitlab-password}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  # Protection CSRF (crumb) : active par défaut ; le point /project/<job> du plugin GitLab en est exempté
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - gitLabApiTokenImpl:     # pas de @Symbol dans gitlab-plugin : nom de classe
+              id: gitlab-api-token
+              description: "GitLab API (statuts de commit) - jeton api de m09-svc-jenkins"
+              scope: GLOBAL
+              apiToken: "${gitlab-api-token}"
+          - usernamePassword:
+              id: gitlab-clone
+              description: "GitLab clone HTTP - jeton read_repository de m09-svc-jenkins"
+              scope: GLOBAL
+              username: "m09-svc-jenkins"
+              password: "${gitlab-clone-token}"
+
+unclassified:
+  location:
+    url: "${JENKINS_URL}"
+    adminAddress: "jenkins@formation.lan"
+  gitLabConnectionConfig:
+    # true : le point d'entrée /project/<job> exige une authentification Jenkins
+    # (sauf si le job définit un "secret token", vérifié via l'en-tête X-Gitlab-Token)
+    useAuthenticatedEndpoint: true
+    connections:
+      - name: "gitlab"
+        url: "http://gitlab.formation.lan"
+        apiTokenId: "gitlab-api-token"
+        clientBuilderId: "autodetect"
+        connectionTimeout: 10
+        readTimeout: 10
+        ignoreCertificateErrors: false
