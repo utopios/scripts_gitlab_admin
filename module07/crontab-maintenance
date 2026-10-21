@@ -1,0 +1,16 @@
+# /etc/cron.d/gitlab-maintenance — planification de la maintenance GitLab (module 7)
+# Installer : sudo cp crontab-maintenance /etc/cron.d/gitlab-maintenance
+#             sudo chmod 644 /etc/cron.d/gitlab-maintenance
+# Scripts attendus dans /opt/gitlab-maintenance/ (copie de supports/scripts/module07).
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+MAILTO=root
+
+# Quotidien 02:15 : sauvegarde données + configuration, vérification, rotation
+15 2 * * *   root  /opt/gitlab-maintenance/sauvegarde-gitlab.sh >/dev/null 2>&1
+# Hebdomadaire dimanche 04:00 : nettoyage (retirer --appliquer pour une simple simulation)
+0 4 * * 0    root  /opt/gitlab-maintenance/nettoyage.sh --appliquer >/dev/null 2>&1
+# Hebdomadaire dimanche 05:00 : housekeeping des dépôts > 50 Mo
+0 5 * * 0    root  /opt/gitlab-maintenance/housekeeping-projets.sh 50 eager >>/var/log/gitlab-maintenance/housekeeping.log 2>&1
+# Mensuel, 1er du mois 06:00 : rapport de stockage
+0 6 1 * *    root  /opt/gitlab-maintenance/rapport-stockage.sh 30 >>/var/log/gitlab-maintenance/stockage.log 2>&1
