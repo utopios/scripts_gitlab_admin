@@ -1,0 +1,46 @@
+# Requêtes PromQL clés par composant - GitLab CE 19.4.2 (format : titre | expression)
+# --- Disponibilité
+Cibles DOWN                         | up == 0
+Cibles par job (1 = up)             | sum by (job) (up)
+Version (Workhorse)                 | gitlab_build_info{job="gitlab-workhorse"}
+# --- Puma (Rails)
+Puma : threads occupés / max        | sum(puma_active_connections) / sum(puma_max_threads)
+Puma : requêtes en file d'attente   | sum(puma_queued_connections)
+Puma : workers en cours             | sum(puma_running_workers)
+Rails : req/s par statut            | sum by (status) (rate(http_requests_total{job="gitlab-rails"}[5m]))
+Rails : latence p95 (s)             | histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="gitlab-rails"}[5m])))
+Rails : Apdex des requêtes (SLI)    | sum(rate(gitlab_sli_rails_request_apdex_success_total[5m])) / sum(rate(gitlab_sli_rails_request_apdex_total[5m]))
+# --- Workhorse / NGINX
+Workhorse : req/s par code (top 5)  | topk(5, sum by (code) (rate(gitlab_workhorse_http_requests_total[5m])))
+Workhorse : taux d'erreurs 5xx      | sum(rate(gitlab_workhorse_http_requests_total{code=~"5.."}[5m])) / sum(rate(gitlab_workhorse_http_requests_total[5m]))
+NGINX : req/s par classe de code    | sum by (code) (rate(nginx_vts_server_requests_total{host="*"}[5m]))
+# --- Sidekiq
+Sidekiq : taille des files          | sum by (name) (sidekiq_queue_size)
+Sidekiq : latence des files (s)     | max by (name) (sidekiq_queue_latency_seconds)
+Sidekiq : jobs en cours             | sum(sidekiq_running_jobs)
+Sidekiq : jobs/s terminés           | sum(rate(sidekiq_jobs_completion_seconds_count[5m]))
+Sidekiq : jobs/s en échec           | sum(rate(sidekiq_jobs_failed_total[5m]))
+Sidekiq : retry / dead / scheduled  | {__name__=~"sidekiq_jobs_(retry|dead|scheduled)_size"}
+Sidekiq : échecs/s par worker       | topk(3, sum by (worker) (rate(sidekiq_jobs_failed_total{worker!=""}[15m])) > 0)
+# --- Gitaly
+Gitaly : RPC/s par code gRPC        | sum by (grpc_code) (rate(grpc_server_handled_total{job="gitaly"}[5m])) > 0
+Gitaly : latence p95 (s)            | histogram_quantile(0.95, sum by (le) (rate(grpc_server_handling_seconds_bucket{job="gitaly",grpc_type="unary"}[5m])))
+Gitaly : pack-objects en cours      | sum(gitaly_pack_objects_in_progress)
+# --- PostgreSQL
+PostgreSQL : up                     | pg_up
+PostgreSQL : connexions / max       | sum(pg_stat_activity_count) / max(pg_settings_max_connections)
+PostgreSQL : taille de la base (Mo) | pg_database_size_bytes{datname="gitlabhq_production"} / 1024 / 1024
+PostgreSQL : deadlocks (1 h)        | sum(increase(pg_stat_database_deadlocks[1h]))
+Rails : pool de connexions DB       | sum by (class) (gitlab_database_connection_pool_busy) / sum by (class) (gitlab_database_connection_pool_size)
+# --- Redis
+Redis : up                          | redis_up
+Redis : mémoire utilisée (Mo)       | redis_memory_used_bytes / 1024 / 1024
+Redis : clients connectés           | redis_connected_clients
+Redis : ratio de hits               | sum(rate(redis_keyspace_hits_total[5m])) / (sum(rate(redis_keyspace_hits_total[5m])) + sum(rate(redis_keyspace_misses_total[5m])))
+# --- Système (node_exporter)
+CPU utilisé (%)                     | 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])))
+Mémoire utilisée (%)                | 100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+Disque / utilisé (%)                | 100 * (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})
+Charge 5 min / nb CPU               | node_load5 / scalar(count(node_cpu_seconds_total{mode="idle"}))
+# --- Saturation (règles d'enregistrement fournies par Omnibus)
+Saturation par ressource            | gitlab_sli:gitlab_component_saturation:ratio
